@@ -1,0 +1,289 @@
+{
+  "name": "afterpull",
+  "displayName": "AfterPull",
+  "description": "After git pull, merge, checkout or rebase, lists what you need to run: reinstall dependencies (npm ci, poetry, uv, go, cargo, bundle, composer), apply new migrations, add new .env keys, rebuild containers, switch toolchains, update submodules, terraform init. One panel, one click per command, nothing runs on its own.",
+  "version": "0.1.1",
+  "publisher": "jaytankdev",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "keywords": [
+    "git pull",
+    "npm ci",
+    "dependencies",
+    "migrations",
+    ".env",
+    "docker compose",
+    "monorepo",
+    "checkout",
+    "lockfile",
+    "terraform init"
+  ],
+  "activationEvents": [
+    "workspaceContains:.git",
+    "onStartupFinished",
+    "onView:afterpull.chores"
+  ],
+  "extensionDependencies": [
+    "vscode.git"
+  ],
+  "main": "./extension.js",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#0B2A5B",
+    "theme": "dark"
+  },
+  "license": "MIT",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "AfterPull runs git inside the repository to see what changed and can start the suggested commands as tasks. It does nothing in an untrusted workspace and starts once the workspace is trusted.",
+      "restrictedConfigurations": [
+        "afterpull.commands",
+        "afterpull.rules"
+      ]
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "taskDefinitions": [
+      {
+        "type": "afterpull",
+        "required": [
+          "chore"
+        ],
+        "properties": {
+          "chore": {
+            "type": "string",
+            "description": "Internal key of the AfterPull chore this task belongs to."
+          }
+        }
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "afterpull",
+          "title": "AfterPull",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "afterpull": [
+        {
+          "id": "afterpull.chores",
+          "name": "Chores",
+          "icon": "media/activity.svg",
+          "contextualTitle": "AfterPull"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "afterpull.chores",
+        "contents": "AfterPull runs git and can start commands as tasks, so it only works in a trusted workspace.\nAfterPull watches every pull, merge, checkout and rebase and lists what to run afterwards: reinstall dependencies when a lockfile changed, apply newly added migrations, add new .env.example keys to your .env, rebuild containers, switch toolchains, update submodules and terraform init.\n[Manage Workspace Trust](command:workbench.trust.manage)",
+        "when": "!isWorkspaceTrusted"
+      },
+      {
+        "view": "afterpull.chores",
+        "contents": "AfterPull is turned off.\n[Open AfterPull Settings](command:workbench.action.openSettings?%5B%22afterpull%22%5D)",
+        "when": "isWorkspaceTrusted && afterpull.disabled"
+      },
+      {
+        "view": "afterpull.chores",
+        "contents": "No git repository found in this workspace.\nAfterPull watches every pull, merge, checkout and rebase and lists what to run afterwards: reinstall dependencies when a lockfile changed, apply newly added migrations, add new .env.example keys to your .env, rebuild containers, switch toolchains, update submodules and terraform init.\n[Open Folder](command:vscode.openFolder)",
+        "when": "isWorkspaceTrusted && !afterpull.disabled && !afterpull.hasRepos"
+      },
+      {
+        "view": "afterpull.chores",
+        "contents": "Nothing to do after the last pull.\nAfterPull watches every pull, merge, checkout and rebase and lists what to run afterwards: reinstall dependencies when a lockfile changed, apply newly added migrations, add new .env.example keys to your .env, rebuild containers, switch toolchains, update submodules and terraform init. Nothing ever runs on its own.\n[Pull](command:git.pull)\n[Add your own rules](command:workbench.action.openSettings?%5B%22afterpull.rules%22%5D)",
+        "when": "isWorkspaceTrusted && !afterpull.disabled && afterpull.hasRepos"
+      }
+    ],
+    "commands": [
+      {
+        "command": "afterpull.show",
+        "title": "Show chores",
+        "category": "AfterPull"
+      },
+      {
+        "command": "afterpull.run",
+        "title": "Run",
+        "category": "AfterPull",
+        "icon": "$(play)"
+      },
+      {
+        "command": "afterpull.runAll",
+        "title": "Run all",
+        "category": "AfterPull",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "afterpull.addEnvKeys",
+        "title": "Add missing keys to .env",
+        "category": "AfterPull",
+        "icon": "$(add)"
+      },
+      {
+        "command": "afterpull.dismiss",
+        "title": "Dismiss",
+        "category": "AfterPull",
+        "icon": "$(close)"
+      },
+      {
+        "command": "afterpull.dismissAll",
+        "title": "Dismiss all",
+        "category": "AfterPull",
+        "icon": "$(clear-all)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "afterpull.runAll",
+          "when": "view == afterpull.chores",
+          "group": "navigation@1"
+        },
+        {
+          "command": "afterpull.dismissAll",
+          "when": "view == afterpull.chores",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "afterpull.run",
+          "when": "view == afterpull.chores && viewItem == afterpull.task",
+          "group": "inline@1"
+        },
+        {
+          "command": "afterpull.addEnvKeys",
+          "when": "view == afterpull.chores && viewItem == afterpull.env",
+          "group": "inline@1"
+        },
+        {
+          "command": "afterpull.dismiss",
+          "when": "view == afterpull.chores && viewItem =~ /^afterpull\\./",
+          "group": "inline@9"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "afterpull.run",
+          "when": "false"
+        },
+        {
+          "command": "afterpull.addEnvKeys",
+          "when": "false"
+        },
+        {
+          "command": "afterpull.dismiss",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AfterPull",
+      "properties": {
+        "afterpull.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Watch every repository in the workspace for HEAD moves (pull, merge, checkout, rebase) and list what to run afterwards."
+        },
+        "afterpull.notify": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a notification when a HEAD move produces new chores."
+        },
+        "afterpull.ignore": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Repository-relative globs that are never considered, for example [\"examples/**\", \"docs/**\"]. A pattern without a slash matches the file name anywhere."
+        },
+        "afterpull.disabledChores": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "AP001",
+              "AP002",
+              "AP003",
+              "AP004",
+              "AP005",
+              "AP006",
+              "AP007",
+              "AP008",
+              "AP009",
+              "AP010",
+              "AP011",
+              "AP012",
+              "AP013"
+            ]
+          },
+          "default": [],
+          "description": "Chore codes to turn off, for example [\"AP010\"]."
+        },
+        "afterpull.commands": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Replace a suggested command. Keys are tool names (npm, yarn, pnpm, bun, poetry, uv, pip, pipenv, go, cargo, bundler, composer, django, alembic, prisma, rails, knex, flyway, migrate, docker, dockerBuild, submodules, terraform) or chore codes (AP001...). Example: {\"npm\": \"npm install\", \"docker\": \"docker compose -f compose.dev.yml up -d --build\", \"migrate\": \"make migrate\"}. The value is run as a shell command line in the chore's folder."
+        },
+        "afterpull.rules": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "required": [
+              "glob",
+              "command"
+            ],
+            "properties": {
+              "glob": {
+                "type": "string",
+                "description": "Repository-relative glob, for example \"proto/**/*.proto\"."
+              },
+              "command": {
+                "type": "string",
+                "description": "Shell command line to suggest, for example \"make proto\"."
+              },
+              "label": {
+                "type": "string",
+                "description": "Text shown in the AfterPull view."
+              },
+              "cwd": {
+                "type": "string",
+                "enum": [
+                  "file",
+                  "root"
+                ],
+                "default": "root",
+                "description": "Run in the repository root (default) or in the folder of the changed file."
+              },
+              "when": {
+                "type": "string",
+                "enum": [
+                  "changed",
+                  "added"
+                ],
+                "default": "changed",
+                "description": "Match any change (default) or only newly added files."
+              }
+            }
+          },
+          "description": "Your own after-pull chores (AP013). Example: [{\"glob\": \"proto/**/*.proto\", \"command\": \"make proto\", \"label\": \"Regenerate protobuf code\"}]."
+        }
+      }
+    }
+  }
+}
